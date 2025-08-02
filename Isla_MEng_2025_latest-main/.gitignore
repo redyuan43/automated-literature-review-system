@@ -1,0 +1,26 @@
+# ignore the .env file
+.env
+
+# ignore the slurm-*.out files
+slurm-*.out
+
+# ignore Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# ignore logs
+*.log
+logs/
+*.out
+*.err
+
+# ignore generated data
+embeddings/
+initial_chapters/
+converted_index/
+offload/
+
+# ignore downloaded models
+.cache/
+models/
