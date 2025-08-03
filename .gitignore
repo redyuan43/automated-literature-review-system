@@ -22,6 +22,7 @@ wheels/
 MANIFEST
 CLAUDE.md
 .7z
+CLAUDE.md.bk
 
 # Virtual environments
 .env
