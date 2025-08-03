@@ -21,6 +21,7 @@ wheels/
 *.egg
 MANIFEST
 CLAUDE.md
+.7z
 
 # Virtual environments
 .env
@@ -64,6 +65,7 @@ fine_tuned_model/
 *.tar.gz
 *.pdf
 *.docx
+*.7z
 
 # Temporary files
 temp/
