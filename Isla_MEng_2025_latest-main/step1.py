@@ -5,12 +5,13 @@ import glob
 import re
 import json
 import logging
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Tuple
 
 import numpy as np
 import faiss
 from sentence_transformers import SentenceTransformer
 from tqdm import tqdm
+from chemical_formula_processor import ChemicalFormulaProcessor
 
 # Hardcoded configuration
 MARKDOWN_DIR = "./files_mmd"
@@ -29,6 +30,38 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
+
+def parse_mmd_metadata(content: str) -> Tuple[Dict[str, Any], str]:
+    """Parse MultiMarkdown-style metadata header and return (metadata, body).
+    Stops at the first empty line or first non key:value line.
+    """
+    lines = content.split('\n')
+    header: Dict[str, Any] = {}
+    i = 0
+    while i < len(lines):
+        line = lines[i].strip()
+        if not line:
+            i += 1
+            break
+        if ':' in line:
+            key, value = line.split(':', 1)
+            header[key.strip()] = value.strip()
+            i += 1
+        else:
+            break
+    body = '\n'.join(lines[i:])
+    # Normalize some common fields
+    norm = {k.lower(): v for k, v in header.items()}
+    parsed = {
+        'title': norm.get('title', ''),
+        'authors': [a.strip() for a in norm.get('author', '').split(',')] if 'author' in norm else [],
+        'year': norm.get('date', ''),
+        'language': norm.get('language', ''),
+        'format': norm.get('format', ''),
+        'math': norm.get('math', ''),
+        'raw': header,
+    }
+    return parsed, body
 
 def extract_metadata(content: str, file_name: str) -> Dict[str, Any]:
     """Extract metadata such as title, authors, year, and abstract from markdown content."""
@@ -85,9 +118,11 @@ def extract_metadata(content: str, file_name: str) -> Dict[str, Any]:
     return metadata
 
 def chunk_document(content: str, chunk_size: int = CHUNK_SIZE, overlap: int = CHUNK_OVERLAP) -> List[str]:
-    """Split document content into smaller overlapping chunks."""
+    """Split document content into smaller overlapping chunks with formula protection."""
+    # Treat page separators (---) as hard boundaries by inserting blank lines
+    preprocessed = re.sub(r'^\s*---\s*$', '\n\n', content, flags=re.MULTILINE)
     # Split by paragraphs
-    paragraphs = re.split(r'\n\s*\n', content)
+    paragraphs = re.split(r'\n\s*\n', preprocessed)
     
     chunks = []
     current_chunk = ""
@@ -97,11 +132,20 @@ def chunk_document(content: str, chunk_size: int = CHUNK_SIZE, overlap: int = CH
         if not paragraph.strip():
             continue
             
-        # If adding this paragraph would exceed chunk size, save current chunk and start a new one
+        # Check if adding this paragraph would exceed chunk size
         if len(current_chunk) + len(paragraph) > chunk_size and current_chunk:
+            # Before chunking, check if we're about to split a formula
+            if _contains_incomplete_formula(current_chunk + "\n\n" + paragraph, len(current_chunk)):
+                # If the current chunk would split a formula, try to include the complete formula
+                extended_chunk = current_chunk + "\n\n" + paragraph
+                if len(extended_chunk) <= chunk_size * 1.5:  # Allow 50% overflow for formula integrity
+                    current_chunk = extended_chunk
+                    continue
+            
             chunks.append(current_chunk.strip())
-            # Keep some overlap between chunks
-            current_chunk = current_chunk[-overlap:] if overlap > 0 else ""
+            # Keep some overlap between chunks, but ensure we don't split formulas in overlap
+            overlap_text = _safe_overlap(current_chunk, overlap)
+            current_chunk = overlap_text
             
         current_chunk += "\n\n" + paragraph
     
@@ -111,24 +155,100 @@ def chunk_document(content: str, chunk_size: int = CHUNK_SIZE, overlap: int = CH
     
     return chunks
 
+def _contains_incomplete_formula(text: str, split_point: int) -> bool:
+    """Check if splitting at split_point would break a LaTeX formula."""
+    # Check for incomplete $$ blocks
+    before_split = text[:split_point]
+    after_split = text[split_point:]
+    
+    # Count $$ pairs before split point
+    double_dollar_count = before_split.count('$$')
+    if double_dollar_count % 2 == 1:  # Odd count means incomplete formula
+        return True
+    
+    # Check for incomplete $ pairs (inline math)
+    # Remove $$ blocks first to avoid false positives
+    temp_text = re.sub(r'\$\$.*?\$\$', '', before_split, flags=re.DOTALL)
+    single_dollar_count = temp_text.count('$')
+    if single_dollar_count % 2 == 1:  # Odd count means incomplete inline formula
+        return True
+    
+    return False
+
+def _safe_overlap(text: str, overlap_size: int) -> str:
+    """Create overlap text that doesn't split formulas."""
+    if overlap_size <= 0:
+        return ""
+    
+    # Get the desired overlap region
+    overlap_text = text[-overlap_size:] if len(text) > overlap_size else text
+    
+    # Check if this overlap starts in the middle of a formula
+    # If so, extend backwards to include the complete formula
+    double_dollar_count = overlap_text.count('$$')
+    if double_dollar_count % 2 == 1:  # Incomplete $$ formula
+        # Find the start of the incomplete formula
+        remaining_text = text[:-overlap_size] if len(text) > overlap_size else ""
+        last_double_dollar = remaining_text.rfind('$$')
+        if last_double_dollar != -1:
+            # Include from the start of the formula
+            return text[last_double_dollar:]
+    
+    # Check for incomplete single $ formulas
+    temp_overlap = re.sub(r'\$\$.*?\$\$', '', overlap_text, flags=re.DOTALL)
+    single_dollar_count = temp_overlap.count('$')
+    if single_dollar_count % 2 == 1:  # Incomplete $ formula
+        remaining_text = text[:-overlap_size] if len(text) > overlap_size else ""
+        temp_remaining = re.sub(r'\$\$.*?\$\$', '', remaining_text, flags=re.DOTALL)
+        # Find the last single $ in remaining text
+        last_single_dollar = temp_remaining.rfind('$')
+        if last_single_dollar != -1:
+            # Calculate position in original text
+            actual_pos = last_single_dollar
+            # Account for removed $$ blocks
+            for match in re.finditer(r'\$\$.*?\$\$', remaining_text, flags=re.DOTALL):
+                if match.start() < last_single_dollar:
+                    actual_pos += len(match.group()) - 0  # We removed the $$...$$ content
+            return text[actual_pos:]
+    
+    return overlap_text
+
 def read_markdown_files(markdown_dir: str) -> List[Dict[str, Any]]:
     """Read all markdown files, extract metadata, and chunk content for indexing."""
     markdown_files = glob.glob(os.path.join(markdown_dir, "*.mmd"))
     
     chunked_documents = []
+    processor = ChemicalFormulaProcessor()
     
     for file_path in markdown_files:
         file_name = os.path.basename(file_path)
         
         try:
             with open(file_path, 'r', encoding='utf-8') as file:
-                content = file.read()
-                
+                original_content = file.read()
+            # Parse MMD header (Title/Author/Date/Language/Format/Math) and body
+            mmd_meta, content = parse_mmd_metadata(original_content)
+            # Preserve chemical formulas/symbols before chunking to avoid splitting inside formulas
+            protected_content = processor.preserve_chemical_content(content)
+
             # Extract metadata
             metadata = extract_metadata(content, file_name)
+            # Merge MMD header fields (header overrides heuristics when present)
+            if mmd_meta.get('title'):
+                metadata['title'] = mmd_meta['title']
+            if mmd_meta.get('authors'):
+                metadata['authors'] = mmd_meta['authors']
+            if mmd_meta.get('year'):
+                metadata['year'] = mmd_meta['year']
+            # Add protection flags to metadata-like fields we will store alongside chunks
+            latex_formulas = processor.extract_latex_formulas(content)
+            metadata_protection = {
+                'protected': True,
+                'latex_formula_count': len(latex_formulas),
+            }
             
             # Chunk the document content
-            chunks = chunk_document(content)
+            chunks = chunk_document(protected_content)
             
             # Create a document entry for each chunk
             for i, chunk in enumerate(chunks):
@@ -140,8 +260,12 @@ def read_markdown_files(markdown_dir: str) -> List[Dict[str, Any]]:
                     'authors': metadata['authors'],
                     'year': metadata['year'],
                     'abstract': metadata['abstract'],
+                    'language': mmd_meta.get('language', ''),
+                    'format': mmd_meta.get('format', ''),
                     'chunk_id': i,
-                    'total_chunks': len(chunks)
+                    'total_chunks': len(chunks),
+                    # Protection-related hints for downstream consumers
+                    **metadata_protection,
                 })
                 
             logger.info(f"Processed {file_name}: {len(chunks)} chunks, authors: {metadata['authors']}")
@@ -185,7 +309,10 @@ def create_faiss_database(documents: List[Dict[str, Any]], output_dir: str):
             'chunk_id': doc['chunk_id'],
             'total_chunks': doc['total_chunks'],
             'excerpt': doc['content'][:500],  # Store first 500 chars as excerpt
-            'id': f"{doc['file_name']}_{doc['chunk_id']}"
+            'id': f"{doc['file_name']}_{doc['chunk_id']}",
+            # Propagate protection flags for downstream awareness
+            'protected': bool(doc.get('protected', False)),
+            'latex_formula_count': int(doc.get('latex_formula_count', 0)),
         })
     
     # Convert to numpy array

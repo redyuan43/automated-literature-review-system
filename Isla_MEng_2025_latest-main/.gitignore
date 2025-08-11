@@ -20,6 +20,7 @@ embeddings/
 initial_chapters/
 converted_index/
 offload/
+test_case/
 
 # ignore downloaded models
 .cache/

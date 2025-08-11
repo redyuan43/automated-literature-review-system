@@ -140,13 +140,27 @@ class ChemicalFormulaProcessor:
         """
         保留文本中的化学内容，确保公式格式不丢失
         
+        对于已经是LaTeX格式的MMD文件，直接返回原文本，
+        因为公式已经被正确保护了。
+        
         Args:
             text: 输入文本
             
         Returns:
-            处理后的文本，化学公式被适当标记
+            处理后的文本（对于MMD文件，返回原文本）
         """
         
+        # 检查是否包含LaTeX公式标记，如果有则认为已经被正确保护
+        latex_block_pattern = r'\$\$.*?\$\$'
+        latex_inline_pattern = r'\$[^$]+\$'
+        
+        if re.search(latex_block_pattern, text, re.DOTALL) or re.search(latex_inline_pattern, text):
+            # 文本已包含LaTeX公式，直接返回不做额外保护
+            latex_formulas = self.extract_latex_formulas(text)
+            logger.info(f"检测到 {len(latex_formulas)} 个LaTeX公式，保持原有格式")
+            return text
+        
+        # 如果没有LaTeX公式，则进行传统的化学内容保护
         # 1. 提取LaTeX公式
         latex_formulas = self.extract_latex_formulas(text)
         

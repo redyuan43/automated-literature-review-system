@@ -21,8 +21,8 @@ class ModelConfig:
     """模型配置类"""
     # 小模型测试环境
     small_model: str = "qwen3:30b-a3b-instruct-2507-q4_K_M"  # Agent使用的小模型
-    main_model: str = "qwen3:30b-a3b-instruct-2507-q4_K_M"  # 主模型
-    test_model: str = "qwen3:30b-a3b-instruct-2507-q4_K_M"   # 测试用模型
+    main_model: str = "qwen3:30b-a3b"  # 主模型
+    test_model: str = "qwen3:30b-a3b"   # 测试用模型
     
     # 针对不同任务的特殊配置 (仅在需要时覆盖Ollama默认值)
     task_configs: Dict[str, Dict[str, Any]] = None
@@ -39,6 +39,10 @@ class ModelConfig:
                 },
                 "chemical_analysis": {
                     "temperature": 0.2  # 化学分析需要最高准确性
+                },
+                "diagram_generation": {
+                    "temperature": 0.1,  # 概念图需要结构化思维
+                    "max_tokens": 4096   # 图表代码可能较长
                 }
             }
 

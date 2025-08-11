@@ -16,6 +16,7 @@ from langchain_community.docstore.document import Document
 # 导入我们的Ollama客户端
 from ollama_client import generate_text, chat_with_model, ollama_client
 from config import MODEL_CONFIG, SYSTEM_CONFIG
+from chemical_formula_processor import ChemicalFormulaProcessor
 
 # 配置日志
 logging.basicConfig(
@@ -32,9 +33,11 @@ class OllamaLiteratureProcessor:
     """基于Ollama的文献处理器"""
     
     def __init__(self):
+        # Use model from configuration
         self.main_model = MODEL_CONFIG.main_model
         self.embeddings_dir = SYSTEM_CONFIG.embeddings_dir
         self.output_dir = SYSTEM_CONFIG.output_dir
+        self.formula = ChemicalFormulaProcessor()
         
         # 确保输出目录存在
         os.makedirs(self.output_dir, exist_ok=True)
@@ -130,9 +133,11 @@ class OllamaLiteratureProcessor:
         
         # 构建上下文
         context_parts = []
-        for i, doc in enumerate(documents[:10]):  # 限制上下文长度
+        for i, doc in enumerate(documents[:15]):  # 增加到15个文档，充分利用256K上下文
             title = doc.metadata.get('title', f'Document {i+1}')
-            content = doc.page_content[:1000]  # 限制每个文档片段长度
+            # 恢复被保护的化学/公式内容为标准 LaTeX+mhchem
+            restored = self.formula.restore_chemical_content(doc.page_content)
+            content = restored  # 使用完整内容，256K上下文足够处理
             context_parts.append(f"[{title}]\n{content}\n")
         
         context = "\n".join(context_parts)
@@ -145,7 +150,7 @@ class OllamaLiteratureProcessor:
 2. 正确引用文献（使用提供的标题）
 3. 保持逻辑清晰的结构
 4. 重点关注化学化工相关的技术细节
-5. 如果涉及化学公式，请保持原有的LaTeX格式
+5. 若出现化学/数学公式，请使用 LaTeX + mhchem 语法（如 \\ce{...}）准确表达
 6. 字数控制在1500-2500字
 
 综述类型：{section_type}"""
@@ -234,6 +239,69 @@ class OllamaLiteratureProcessor:
             results[section_type] = review
         
         return results
+
+    # =============== 新增：无 chapter_markdowns 时的按主题处理 ===============
+    def discover_topics(self) -> List[str]:
+        """优先从 embeddings/metadata.json 提取标题作为主题；否则从 files_mmd/*.mmd 文件名获取主题。"""
+        topics: List[str] = []
+        # 1) embeddings/metadata.json
+        meta_json = os.path.join(self.embeddings_dir, "metadata.json")
+        if os.path.exists(meta_json):
+            try:
+                with open(meta_json, 'r', encoding='utf-8') as f:
+                    meta = json.load(f)
+                titles = []
+                for item in meta:
+                    title = (item.get('title') or '').strip()
+                    if not title:
+                        # 用文件名去掉扩展作为后备
+                        fname = item.get('file_name', '')
+                        title = os.path.splitext(fname)[0]
+                    if title:
+                        titles.append(title)
+                # 去重并保序
+                seen = set()
+                for t in titles:
+                    if t not in seen:
+                        seen.add(t)
+                        topics.append(t)
+                if topics:
+                    return topics
+            except Exception as e:
+                logger.warning(f"读取 embeddings/metadata.json 失败，转用 files_mmd：{e}")
+
+        # 2) files_mmd/*.mmd
+        mmd_dir = "./files_mmd"
+        if os.path.exists(mmd_dir):
+            mmd_files = [f for f in os.listdir(mmd_dir) if f.endswith('.mmd')]
+            for fn in sorted(mmd_files):
+                topics.append(os.path.splitext(fn)[0])
+        return topics
+
+    def process_topic(self, topic: str) -> Dict[str, str]:
+        """基于主题直接检索并生成三段式综述。"""
+        vector_store = self.load_vector_store()
+        section_types = [
+            "BACKGROUND KNOWLEDGE",
+            "CURRENT RESEARCH",
+            "RESEARCH RECOMMENDATIONS"
+        ]
+        results: Dict[str, str] = {}
+        for section_type in section_types:
+            logger.info(f"处理主题 {topic} - {section_type}")
+            query = f"{topic} {section_type.lower()}"
+            relevant_docs = self.retrieve_relevant_documents(query, vector_store, k=15)
+            if not relevant_docs:
+                logger.warning(f"未找到相关文档: {query}")
+                results[section_type] = f"未找到与'{query}'相关的文献内容。"
+                continue
+            review = self.generate_literature_review(
+                topic=topic,
+                documents=relevant_docs,
+                section_type=section_type
+            )
+            results[section_type] = review
+        return results
     
     def save_results(self, results: Dict[str, str], chapter_name: str):
         """保存生成结果"""
@@ -273,41 +341,45 @@ def main():
         logger.error(f"初始化处理器失败: {e}")
         return
     
-    # 查找章节文件
+    # 优先走 chapter_markdowns；若不存在或为空，则从 embeddings/files_mmd 发现主题
     chapter_dir = "./chapter_markdowns"
-    if not os.path.exists(chapter_dir):
-        logger.error(f"章节目录不存在: {chapter_dir}")
-        return
-    
-    chapter_files = [f for f in os.listdir(chapter_dir) if f.endswith('.md')]
-    
-    if not chapter_files:
-        logger.error(f"在 {chapter_dir} 中未找到.md文件")
-        return
-    
-    logger.info(f"找到 {len(chapter_files)} 个章节文件")
-    
-    # 处理每个章节
-    for chapter_file in sorted(chapter_files):
-        chapter_path = os.path.join(chapter_dir, chapter_file)
-        chapter_name = chapter_file.replace('.md', '')
-        
-        logger.info(f"\n开始处理章节: {chapter_name}")
-        
-        try:
-            # 处理章节
-            results = processor.process_chapter(chapter_path)
-            
-            if results:
-                # 保存结果
-                processor.save_results(results, chapter_name)
-                logger.info(f"章节 {chapter_name} 处理完成")
-            else:
-                logger.warning(f"章节 {chapter_name} 未生成任何内容")
-                
-        except Exception as e:
-            logger.error(f"处理章节 {chapter_name} 时出错: {e}")
-            continue
+    chapter_files: List[str] = []
+    if os.path.exists(chapter_dir):
+        chapter_files = [f for f in os.listdir(chapter_dir) if f.endswith('.md')]
+
+    if chapter_files:
+        logger.info(f"找到 {len(chapter_files)} 个章节文件")
+        for chapter_file in sorted(chapter_files):
+            chapter_path = os.path.join(chapter_dir, chapter_file)
+            chapter_name = chapter_file.replace('.md', '')
+            logger.info(f"\n开始处理章节: {chapter_name}")
+            try:
+                results = processor.process_chapter(chapter_path)
+                if results:
+                    processor.save_results(results, chapter_name)
+                    logger.info(f"章节 {chapter_name} 处理完成")
+                else:
+                    logger.warning(f"章节 {chapter_name} 未生成任何内容")
+            except Exception as e:
+                logger.error(f"处理章节 {chapter_name} 时出错: {e}")
+                continue
+    else:
+        topics = processor.discover_topics()
+        if not topics:
+            logger.error("未能从 embeddings 或 files_mmd 发现任何主题，无法生成初稿。")
+            return
+        logger.info(f"从 embeddings/files_mmd 发现 {len(topics)} 个主题")
+        for topic in topics:
+            try:
+                results = processor.process_topic(topic)
+                if results:
+                    processor.save_results(results, topic)
+                    logger.info(f"主题 {topic} 处理完成")
+                else:
+                    logger.warning(f"主题 {topic} 未生成任何内容")
+            except Exception as e:
+                logger.error(f"处理主题 {topic} 时出错: {e}")
+                continue
     
     logger.info("=== Ollama文献处理流程完成 ===")
 

@@ -9,6 +9,30 @@ from typing import Dict, List, Any
 from pathlib import Path
 
 from ag2_agents import AG2LiteratureReviewSystem
+from chemical_formula_processor import ChemicalFormulaProcessor
+from pathlib import Path
+
+# DocAgent 统一入口（轻量占位，后续扩展为独立 doc_agent.py 模块并在此导入）
+class DocAgent:
+    def __init__(self):
+        self.formula = ChemicalFormulaProcessor()
+        self.initial_dir = Path("./initial_chapters")
+        self.outputs_dir = Path("./outputs")
+        self.chapters_dir = Path("./chapter_markdowns")
+
+    def protect_formulas(self, text: str) -> str:
+        return self.formula.preserve_chemical_content(text)
+
+    def restore_formulas(self, text: str) -> str:
+        return self.formula.restore_chemical_content(text)
+
+    def append_citation_analysis(self, chapter_markdown_path: Path, analysis_text: str):
+        try:
+            content = chapter_markdown_path.read_text(encoding='utf-8')
+            content += "\n\n## 引用准确性分析\n\n" + analysis_text.strip() + "\n"
+            chapter_markdown_path.write_text(content, encoding='utf-8')
+        except Exception:
+            pass
 from ollama_client import generate_text
 from config import MODEL_CONFIG, SYSTEM_CONFIG
 
@@ -37,6 +61,7 @@ class AG2LiteratureImprover:
             
         self.output_dir = SYSTEM_CONFIG.output_dir
         self.improved_dir = os.path.join(self.output_dir, "improved")
+        self.doc_agent = DocAgent()
         
         # 确保改进结果目录存在
         os.makedirs(self.improved_dir, exist_ok=True)
@@ -76,6 +101,8 @@ class AG2LiteratureImprover:
         chapter = content_data.get('chapter', 'unknown')
         section_type = content_data.get('section_type', 'unknown')
         original_content = content_data.get('content', '')
+        # 评审阶段使用可读文本（不包裹标签），避免标签噪声干扰专家判断
+        readable_for_review = self.doc_agent.restore_formulas(original_content)
         
         logger.info(f"开始改进: {chapter} - {section_type}")
         
@@ -89,7 +116,7 @@ class AG2LiteratureImprover:
                 return self.improve_with_fallback_method(content_data, topic)
             
             # 使用AG2系统进行评审
-            review_results = self.run_ag2_review(original_content, topic)
+            review_results = self.run_ag2_review(readable_for_review, topic)
             
             if not review_results.get('success', False):
                 logger.error(f"AG2评审失败: {review_results.get('error', '未知错误')}")
@@ -102,6 +129,8 @@ class AG2LiteratureImprover:
                 review_results, 
                 topic
             )
+            # 如果改写返回仍含保护标签，统一恢复
+            improved_content = self.doc_agent.restore_formulas(improved_content)
             
             # 构建改进结果
             improvement_result = {
@@ -148,7 +177,7 @@ class AG2LiteratureImprover:
             # 调用化学专家
             if hasattr(self.ag2_system, 'chemistry_expert'):
                 chem_success, chem_review = self.ag2_system.chemistry_expert.generate_oai_reply([
-                    {"content": f"请从化学准确性角度评审以下内容：\n主题：{topic}\n内容：{content}"}
+                    {"content": f"请从化学准确性角度评审以下内容。重要：<CHEM_LATEX>、<CHEM_ENTITY>、<CHEM_SYMBOL> 内文本为只读，禁止改动。若需引用公式，请保持 LaTeX+mhchem 语法。\n主题：{topic}\n内容：{content}"}
                 ])
                 if chem_success:
                     reviews['chemistry'] = chem_review
@@ -156,7 +185,7 @@ class AG2LiteratureImprover:
             # 调用文献专家
             if hasattr(self.ag2_system, 'literature_expert'):
                 lit_success, lit_review = self.ag2_system.literature_expert.generate_oai_reply([
-                    {"content": f"请从结构和逻辑角度评审以下内容：\n主题：{topic}\n内容：{content}"}
+                    {"content": f"请从结构和逻辑角度评审以下内容。重要：如遇 <CHEM_*> 标签，视为只读，占位勿改。\n主题：{topic}\n内容：{content}"}
                 ])
                 if lit_success:
                     reviews['literature'] = lit_review
@@ -170,7 +199,7 @@ class AG2LiteratureImprover:
             
             if data_expert:
                 data_success, data_review = data_expert.generate_oai_reply([
-                    {"content": f"请从数据合理性角度验证以下内容：\n主题：{topic}\n内容：{content}"}
+                    {"content": f"请从数据合理性角度验证以下内容。重要：化学公式标签 <CHEM_*> 只读，保持不变。\n主题：{topic}\n内容：{content}"}
                 ])
                 if data_success:
                     reviews['data'] = data_review
@@ -178,7 +207,7 @@ class AG2LiteratureImprover:
             # 调用队长
             if hasattr(self.ag2_system, 'captain'):
                 captain_success, captain_review = self.ag2_system.captain.generate_oai_reply([
-                    {"content": f"请综合评审以下内容：\n主题：{topic}\n内容：{content}\n其他专家意见：{str(reviews)}"}
+                    {"content": f"请综合评审以下内容。重要：<CHEM_*> 标签为只读，请勿建议修改标签内字符；若需建议，描述在标签外表述。\n主题：{topic}\n内容：{content}\n其他专家意见：{str(reviews)}"}
                 ])
                 if captain_success:
                     reviews['captain'] = captain_review
@@ -202,6 +231,7 @@ class AG2LiteratureImprover:
         logger.info("使用备用改进方法...")
         
         original_content = content_data.get('content', '')
+        protected = self.doc_agent.protect_formulas(original_content)
         
         # 使用直接的LLM改进
         improvement_prompt = f"""请改进以下文献综述内容：
@@ -209,7 +239,7 @@ class AG2LiteratureImprover:
 【主题】: {topic}
 
 【原始内容】:
-{original_content}
+{protected}
 
 【改进要求】:
 1. 确保化学公式和反应的准确性
@@ -221,7 +251,7 @@ class AG2LiteratureImprover:
 
 请提供改进后的完整内容："""
 
-        system_prompt = """你是一个专业的学术文献改进专家。请对文献内容进行全面改进，确保科学准确性、结构完整性和学术规范性。保持原有的LaTeX公式格式。"""
+        system_prompt = """你是一个专业的学术文献改进专家。请对文献内容进行全面改进，确保科学准确性、结构完整性和学术规范性。保持原有的LaTeX+mhchem公式格式。<CHEM_LATEX>、<CHEM_ENTITY>、<CHEM_SYMBOL> 标签内文本为只读，禁止任何改动。"""
 
         try:
             improved_content = generate_text(
@@ -232,6 +262,7 @@ class AG2LiteratureImprover:
                 temperature=0.3,
                 max_tokens=8192
             )
+            improved_content = self.doc_agent.restore_formulas(improved_content)
             
             # 构建简化的评审结果
             fallback_review = {
@@ -305,7 +336,7 @@ class AG2LiteratureImprover:
 3. 学术规范性 - 引用规范，表达专业
 4. 内容连贯性 - 前后呼应，无矛盾
 
-请保持原有的LaTeX公式格式，不要改变化学公式的表示方法。"""
+请保持原有的LaTeX+mhchem公式格式，不要改变化学公式的表示方法。若文本包含 <CHEM_LATEX>、<CHEM_ENTITY>、<CHEM_SYMBOL>，则其内部文本为只读，禁止修改。"""
 
         try:
             improved_content = generate_text(
@@ -355,6 +386,11 @@ class AG2LiteratureImprover:
             if 'captain' in reviews or 'final_recommendations' in review_results:
                 summary_parts.append("### 综合改进措施")
                 summary_parts.append("- 基于专家综合意见进行了全面优化")
+
+            # 引用准确性（若有）
+            if 'citation' in reviews:
+                summary_parts.append("### 引用准确性分析（摘要）")
+                summary_parts.append("- 已完成引用-证据对齐检查，详情见章节末尾‘引用准确性分析’区块")
         
         return "\n".join(summary_parts)
     
@@ -415,6 +451,16 @@ class AG2LiteratureImprover:
                 json.dump(simple_data, f, ensure_ascii=False, indent=2)
             
             logger.info(f"最终结果已保存: {simple_filepath}")
+
+            # 追加章节末尾的“引用准确性分析”区块（如果有相关信息）
+            try:
+                chapter_md_path = Path("./chapter_markdowns") / f"{chapter}.md"
+                citation_info = improvement_result.get('review_results', {}).get('reviews', {}).get('citation', '')
+                if citation_info and chapter_md_path.exists():
+                    self.doc_agent.append_citation_analysis(chapter_md_path, str(citation_info))
+                    logger.info(f"已在章节末尾追加引用准确性分析: {chapter_md_path}")
+            except Exception as e:
+                logger.warning(f"追加引用准确性分析失败: {e}")
             
         except Exception as e:
             logger.error(f"保存改进结果失败: {e}")

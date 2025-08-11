@@ -66,7 +66,7 @@ class OllamaAgent(ConversableAgent):
                 system=self.system_message,
                 task_type="agent_review",
                 temperature=0.5,
-                max_tokens=2048
+                max_tokens=8192  # 增加到8K，充分利用模型能力
             )
             
             return True, response
@@ -259,7 +259,7 @@ class AG2LiteratureReviewSystem:
 【主题】: {topic}
 
 【内容】:
-{protected_content[:4000]}  # 限制长度避免token超限
+{protected_content}  # 使用完整内容，256K上下文足够处理
 
 请每位专家从自己的专业角度进行评审，重点关注：
 - 化学专家：化学准确性

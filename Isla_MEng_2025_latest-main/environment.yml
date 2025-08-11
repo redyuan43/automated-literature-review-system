@@ -130,4 +130,5 @@ dependencies:
       - wrapt==1.17.2
       - xxhash==3.5.0
       - yarl==1.20.0
+      - filelock==3.18.0
 prefix: /home3/grtq36/anaconda3/envs/new_env

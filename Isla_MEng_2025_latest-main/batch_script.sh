@@ -60,15 +60,15 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-python step2.py
+python step2_ollama.py
 if [ $? -ne 0 ]; then
-    echo "ERROR: step2.py failed with exit code $?"
+    echo "ERROR: step2_ollama.py failed with exit code $?"
     exit 1
 fi
 
-python step3.py
+python step3_ag2.py
 if [ $? -ne 0 ]; then
-    echo "ERROR: step3.py failed with exit code $?"
+    echo "ERROR: step3_ag2.py failed with exit code $?"
     exit 1
 fi
 
@@ -81,5 +81,10 @@ fi
 python fine_tune.py
 if [ $? -ne 0 ]; then
     echo "ERROR: fine_tune.py failed with exit code $?"
+
+python export_reports.py
+if [ $? -ne 0 ]; then
+    echo "WARNING: export_reports.py failed with exit code $? (continuing)"
+fi
 
 echo "Job finished on $(date)." # Added finish message

@@ -57,10 +57,16 @@ initial_chapters/
 chapter_markdowns/
 chapter_diagrams/
 fine_tuned_model/
+doc.txt
 *.out
 *.err
 *.log
+weights/
 
+concept_diagrams/
+test_concept_diagrams/
+test_outputs/
+dataset_old/
 # Large files
 *.zip
 *.tar.gz
@@ -71,4 +77,4 @@ fine_tuned_model/
 # Temporary files
 temp/
 tmp/
-cache/ 
+cache/ pdf2md/

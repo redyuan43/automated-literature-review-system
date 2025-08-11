@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 from huggingface_hub import login
 import argparse
 import re
+from chemical_formula_processor import ChemicalFormulaProcessor
 
 # Configure logging
 logging.basicConfig(
@@ -334,16 +335,26 @@ def rewrite_text(improvement_points, original_text, temperature=0.7, max_tokens=
         logger.error("No improvement points or original text provided")
         return "Error: Improvement points and original text are required"
     
+    # Protect chemical formulas before sending to LLM to avoid corrupting LaTeX/mhchem content
+    processor = ChemicalFormulaProcessor()
+    protected_original_text = processor.preserve_chemical_content(original_text)
+
     # Check if it's safe to process in terms of memory
     if not estimate_memory_needs(len(original_text)):
         logger.info("Using batch processing for large text")
-        rewritten_text = batch_process_text(original_text, improvement_points, max_length=5000, referenced_papers=referenced_papers, full_chapter_context=full_chapter_context)
+        rewritten_text = batch_process_text(protected_original_text, improvement_points, max_length=5000, referenced_papers=referenced_papers, full_chapter_context=full_chapter_context)
     else:
         # Create the prompt
-        prompt = create_rewrite_prompt(original_text, improvement_points, referenced_papers, full_chapter_context)
+        prompt = create_rewrite_prompt(protected_original_text, improvement_points, referenced_papers, full_chapter_context)
         
         # System message to guide the model
-        system_message = "You are an expert academic editor specializing in technical scientific content, particularly physics and semiconductor technology. You excel at rewriting text to improve clarity, technical accuracy, and flow."
+        system_message = (
+            "You are an expert academic editor specializing in chemical engineering and scientific content. "
+            "Follow these rules strictly:\n"
+            "- Use LaTeX + mhchem syntax for chemical formulas and reactions.\n"
+            "- Any content within <CHEM_LATEX>, <CHEM_ENTITY>, <CHEM_SYMBOL> tags is READ-ONLY. DO NOT modify characters inside.\n"
+            "- Improve clarity, technical accuracy, and flow without altering protected chemical content."
+        )
         
         # Call the model
         logger.info("Calling model to rewrite text...")
@@ -351,7 +362,9 @@ def rewrite_text(improvement_points, original_text, temperature=0.7, max_tokens=
     
     # Clean the response
     cleaned_text = clean_response(rewritten_text)
-    return cleaned_text
+    # Restore chemical formulas after model generation
+    restored_text = processor.restore_chemical_content(cleaned_text)
+    return restored_text
 
 def call_model(prompt, system_message=None, temperature=0.7, max_tokens=1000):
     """Call the model directly with proper formatting for Gemma models"""

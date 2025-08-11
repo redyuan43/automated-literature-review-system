@@ -1,0 +1,392 @@
+Title: 1 s2.0 S0096300321005683 main
+Author: OCR Extracted Document
+Date: 2025-08-11
+Format: MultiMarkdown
+Language: en
+Math: true
+
+# 1-s2.0-S0096300321005683-main
+
+*Document processed from OCR output with formula protection*
+
+Chemical kinetics is the science of chemical reaction rates [17]. In 1864, Guldberg and Waage [20] formulated the law of mass action for chemical systems and obtained the reaction rate equation. The progress solidified the mathematical foundations of mass action kinetics. In order to illustrate the irregular fluctuation of noise, McQuarrie [18] began with the work of stochastic chemical kinetics. Physically, the Langevin equation can be traced back to Paul Langevin [8], and it is a complete description of Brownian motion. Following that, Gillespie [5] applied the Langevin equation to chemical kinetics, and provided a detailed illustration of the chemical Langevin equation. Unfortunately, a paradox can be deduced from the assumption that the concentration of chemical molecules satisfies the stochastic differential equation. In this case, developing uncertain chemical kinetics is really necessary. Therefore, we derive the first uncertain chemical kinetics model called the uncertain chemical reaction equation. This derivation provides a new perspective on the source and size of noise in chemical kinetics.
+
+This article is organized as follows. In Section 2, a simple example of decomposition of N₂O₅ is presented to showcase the main concepts involved in this work. Meanwhile, we derive an uncertain chemical reaction equation. The general form of uncertain chemical reaction equations is derived in Section 3. Parameter estimation for an uncertain chemical reaction equation is made analytically in Section 4. Section 5 illustrates the application of an uncertain chemical reaction equation in the half-life of reaction. The conclusion is drawn in Section 6. Appendix A introduces a paradox of stochastic chemical kinetics.
+
+## 2. Illustrative example: decomposition of N₂O₅
+
+Without loss of generality, we consider a set of 4 chemical species {S₁, S₂, S₃, S₄} in a single reaction. The stoichiometric equation is of the form
+
+
+$$v_1S_1 + v_2S_2 \rightarrow v_3S_3 + v_4S_4 \quad (1)$$
+
+where the stoichiometric coefficient $v_l$ determine the change in S_l by one reaction event, $l = 1, 2, 3, 4$.
+
+The law of mass action states that the rate of any given chemical reaction is proportional to the product of the concentrations or activities of the reactants [1]. Let Xᵢₜ denote the concentration of Sᵢ at time t. Then the rate for reaction (1) is
+
+
+$$v_t^{(ma)} = \mu X_{1t}^{v_1} X_{2t}^{v_2}$$
+
+where the rate parameter $\mu$ characterizes the velocity of the process. The value of $\mu$ depends on external conditions like temperature, pressure, etc., does not depend on the number of particles or collision events, and is in general independent of time [2]. The rate of chemical reaction is defined as the change in the concentration of reactants or products divided by its coefficient in the balanced chemical reaction. For the rate of reaction (1), . . . .
+
+
+$$v_t^{(ma)} = -\frac{1}{v_1} \frac{dX_{1t}}{dt} = -\frac{1}{v_2} \frac{dX_{2t}}{dt} = \frac{1}{v_3} \frac{dX_{3t}}{dt} = \frac{1}{v_4} \frac{dX_{4t}}{dt}.$$
+
+We can solve the above equations to produce
+
+
+$$\begin{aligned} X_{2t} &= \frac{v_2}{v_1} (X_{1t} - X_{1,0}) + X_{2,0}, \\ X_{3t} &= -\frac{v_3}{v_1} (X_{1t} - X_{1,0}) + X_{3,0}, \\ X_{4t} &= -\frac{v_4}{v_1} (X_{1t} - X_{1,0}) + X_{4,0}. \end{aligned}$$
+
+Therefore, we only need to model X₁t, and then Xᵢₜ could be derived from X₁t, $l = 2, 3, 4$.
+
+Next, taking the example of decomposition of N₂O₅, we state the ideas in this article. The stoichiometric equation is of the form
+
+
+$$2\text{N}_2\text{O}_5(\text{soln}) \xrightarrow{\text{CCL}_4} 4\text{NO}_2(\text{soln}) + \text{O}_2(\text{g}), \quad (2)$$
+
+which occurs in some fixed volume after thorough stirring. Let Xᵢ denote the concentration of N₂O₅ molecules at time t. Then the primary goal is to model Xᵢ from a given initial state X₀ = x₀.
+
+Consider any partition of [0, s] of the form 0 = t₁ < t₂ < ... < tₖ₊₁ = s with the mesh $\Delta = \max_{1 \le i \le k} |t_{i+1} - t_i|$, and Xᵢᵢ denotes the concentration of N₂O₅ molecules at time tᵢ. For reaction (2), the law of mass action yields the reaction rate
+
+
+$$v_t^{(ma)} = \mu X_t^2.$$
+
+In an actual reaction, the number of molecules is measured in mol, and the number of molecules in 1 mol is 6.023 × 10²³. When $\Delta$ is small enough to ensure that the change of Xᵢ during [tᵢ, tᵢ₊₁] will be slight, $v_t^{(ma)}$ during [tᵢ, tᵢ₊₁] can be approximated by
+
+
+$$v_{t_i}^{(ma)} = \mu X_{t_i}^2.$$
+
+Considering now environmental influences on $\mu$, the reaction rate should be regarded as
+
+
+$$v_{t_i}^{(ma)} = (\mu + \sigma \cdot \text{"noise"}) X_{t_i}^2.$$
+
+
+---
+
+According to the definition of Liu process $C_t$ [13], we can describe the “noise” with
+
+
+$$ \frac{C_{t_{i+1}} - C_{t_i}}{t_{i+1} - t_i} $$
+
+which has an uncertainty distribution
+
+
+$$ \Phi(x) = \left( 1 + \exp\left(\frac{-\pi x}{\sqrt{3}}\right) \right)^{-1} $$
+
+Hence,
+
+
+$$ v_{t_i}^{(ma)} = \left( \mu + \sigma \frac{C_{t_{i+1}} - C_{t_i}}{t_{i+1} - t_i} \right) X_{t_i}^2. $$
+
+If this definition of reaction rate is applied to reaction (2), then,
+
+
+$$ v_{t_i}^{(ma)} = - \frac{X_{t_{i+1}} - X_{t_i}}{2(t_{i+1} - t_i)}. $$
+
+The increment of $X_t$ is
+
+
+$$ \begin{aligned} X_{t_{i+1}} - X_{t_i} &= -2v_{t_i}^{(ma)}(t_{i+1} - t_i) \\ &= -2\left(\mu + \sigma \frac{C_{t_{i+1}} - C_{t_i}}{t_{i+1} - t_i}\right)X_{t_i}^2(t_{i+1} - t_i) \\ &= -2\mu X_{t_i}^2(t_{i+1} - t_i) - 2\sigma X_{t_i}^2(C_{t_{i+1}} - C_{t_i}). \end{aligned} $$
+
+Summing over all possible values of $i$, we have
+
+
+$$ \begin{aligned} X_s - X_0 &= \sum_{i=1}^{k} \left( -2\mu X_{t_i}^2 (t_{i+1} - t_i) - 2\sigma X_{t_i}^2 (C_{t_{i+1}} - C_{t_i}) \right) \\ &= -2\mu \sum_{i=1}^{k} X_{t_i}^2 (t_{i+1} - t_i) - 2\sigma \sum_{i=1}^{k} X_{t_i}^2 (C_{t_{i+1}} - C_{t_i}) \\ &\rightarrow -2\mu \int_{0}^{s} X_{t_i}^2 dt - 2\sigma \int_{0}^{s} X_{t_i}^2 dC_t \end{aligned} $$
+
+as $\Delta \to 0$. The above uncertain integral equation is equivalent to the following uncertain differential equation,
+
+
+$$ dX_t = -2\mu X_t^2 dt - 2\sigma X_t^2 dC_t, \quad X_0 = x_0. \qquad (3) $$
+
+It is called an uncertain chemical reaction equation of reaction (2).
+
+**Theorem 2.1.** The uncertain chemical reaction Eq. (3) has a solution
+
+
+$$ X_t = \frac{x_0}{2x_0(\mu t + \sigma C_t) + 1}. $$
+
+**Proof.** It is not hard to see that Eq. (3) can be written as
+
+
+$$ -\frac{dX_t}{X_t^2} = 2\mu dt + 2\sigma dC_t. $$
+
+By the fundamental theorem of uncertain calculus [13], we get
+
+
+$$ d\frac{1}{X_t} = 2\mu dt + 2\sigma dC_t. $$
+
+It follows that
+
+
+$$ \frac{1}{X_t} = \frac{1}{X_0} + 2\mu t + 2\sigma C_t, $$
+
+and then the solution is
+
+
+$$ X_t = \frac{x_0}{2x_0(\mu t + \sigma C_t) + 1}. $$
+
+The proof is completed. ☐
+
+**Corollary 2.1.** The solution of the uncertain chemical reaction Eq. (3) has an uncertainty distribution
+
+
+$$ \Psi_t(x) = \left( 1 + \exp\left( \frac{\pi}{2\sqrt{3}\sigma} \left( \frac{1}{tx} - \frac{1}{tx_0} - 2\mu \right) \right) \right)^{-1}, \quad x > 0. $$
+
+
+---
+
+**Proof.** Since the concentration $X_t$ takes only nonnegative value and since the initial value $x_0$ is the highest quantity of $X_t$ that can be observed, hence
+
+
+$$0 \le X_t \le x_0. \tag{4}$$
+
+When $x = 0$, we have
+
+
+$$\mathcal{M}\{X_t \le x\} = 0.$$
+
+When $x > 0$, it follows from inequality (4) and the solution
+
+
+$$X_t = \frac{x_0}{2x_0(\mu t + \sigma C_t) + 1}$$
+
+that
+
+
+$$2x_0(\mu t + \sigma C_t) + 1 \ge 1. \tag{5}$$
+
+By using inequality (5), we have
+
+
+$$\begin{aligned} \mathcal{M}\{X_t \le x\} &= \mathcal{M}\left\{\frac{x_0}{2x_0(\mu t + \sigma C_t) + 1} \le x\right\} \\ &= \mathcal{M}\{2x_0(\mu t + \sigma C_t) + 1 \ge \frac{x_0}{x}\} \\ &= \mathcal{M}\left\{\frac{C_t}{t} \ge \frac{1}{2\sigma t x} - \frac{1}{2\sigma t x_0} - \frac{\mu}{\sigma}\right\} \\ &= 1 - \mathcal{M}\left\{\frac{C_t}{t} < \frac{1}{2\sigma t x} - \frac{1}{2\sigma t x_0} - \frac{\mu}{\sigma}\right\} \\ &= 1 - \left(1 + \exp\left(\frac{\pi}{2\sqrt{3\sigma}}\left(2\mu + \frac{1}{tx_0} - \frac{1}{tx}\right)\right)\right)^{-1} \\ &= \left(1 + \exp\left(\frac{\pi}{2\sqrt{3\sigma}}\left(\frac{1}{tx} - \frac{1}{tx_0} - 2\mu\right)\right)\right)^{-1}. \end{aligned}$$
+
+The corollary is proved. □
+
+### 3. General uncertain chemical reaction equation
+
+Let us consider a general system consisting of $n$ well-stirred mixture molecular species $\{S_1, S_2, \dots, S_n\}$ that chemically interact via $m$ different reaction channels $\{R_1, R_2, \dots, R_m\}$ in some fixed volume. Then the stoichiometric equations of reactions are as follows,
+
+
+$$v_{j1}S_1 + v_{j2}S_2 + \dots + v_{jn}S_n \rightarrow v_{j1}S_1 + v_{j2}S_2 + \dots + v_{jn}S_n$$
+
+for $j = 1, 2, \dots, m$, and $v_{jl}$ and $v_{ji}$ are the stoichiometric coefficients of the reaction. Let $X_{lt}$ denote the concentrations of $S_l$ molecules at time $t$, $l = 1, 2, \dots, n$. Then the goal is to model $X_{lt}$ from some given initial state $X_{l0} = x_{l0}$.
+
+Consider any partition of $[0, s]$ of the form $0 = t_1 < t_2 < \dots < t_{k+1} = s$ with the mesh $\Delta = \max_{1 \le i \le k} |t_{i+1} - t_i|$, and $X_{lt_i}$ denotes the concentration of $S_l$ molecules at time $t_i$. Based on the law of mass action in Section 2, the reaction rate of $R_j$ boils down to
+
+
+$$v_{jt}^{(ma)} = \mu_j X_{1t}^{v_{j1}} X_{2t}^{v_{j2}} \dots X_{nt}^{v_{jn}}.$$
+
+When $\Delta$ is small enough to ensure that the change of $X_{lt}$ during $[t_i, t_{i+1}]$ will be slight, $v_{jt}^{(ma)}$ during $[t_i, t_{i+1}]$ can be approximated by
+
+
+$$v_{jt_i}^{(ma)} = \mu_j X_{1t_i}^{v_{j1}} X_{2t_i}^{v_{j2}} \dots X_{nt_i}^{v_{jn}}.$$
+
+The value of $\mu_j$ depends on the physical properties of $R_j$ reactant species and environmental factors such as temperature and pressure. Considering now environmental influences on rate parameter $\mu_j$, the reaction rate should be regarded as
+
+
+$$v_{jt_i}^{(ma)} = (\mu_j + \sigma_j \cdot \text{"noisej"}) X_{1t_i}^{v_{j1}} X_{2t_i}^{v_{j2}} \dots X_{nt_i}^{v_{jn}}.$$
+
+According to the definition of Liu process $C_t$ [13], we can describe the “noisej” of $R_j$ with
+
+
+$$\frac{C_{jt_{i+1}} - C_{jt_i}}{t_{i+1} - t_i}$$
+
+which has an uncertainty distribution
+
+
+$$\Phi(x) = \left(1 + \exp\left(\frac{-\pi x}{\sqrt{3}}\right)\right)^{-1}.$$
+
+
+---
+
+Hence,
+
+
+$$v_{jt_i}^{(ma)} = \left( \mu_j + \sigma_j \frac{C_{jt_{i+1}} - C_{jt_i}}{t_{i+1} - t_i} \right) X_{1t_i}^{v_{1j}} X_{2t_i}^{v_{2j}} \cdots X_{nt_i}^{v_{nj}}$$
+
+If this definition of reaction rate is applied to $R_j$, then.
+
+
+$$v_{jt_i}^{(ma)} = \frac{X_{lt_{i+1}} - X_{lt_i}}{w_{jl}(t_{i+1} - t_i)}$$
+
+where stoichiometric equation of $R_j$ implies that the change in the number of $S_l$ molecules produced by one reaction is $w_{jl} = -v_{jl} + v_{jl}$. When $m$ reactions are considered in $[t_i, t_{i+1}]$, the increment of $X_{lt}$ is
+
+
+$$\begin{aligned} X_{lt_{i+1}} - X_{lt_i} &= \sum_{j=1}^{m} w_{jl} v_{jt_i}^{(ma)} (t_{i+1} - t_i) \\ &= \sum_{j=1}^{m} w_{jl} \left( \mu_j + \sigma_j \frac{C_{jt_{i+1}} - C_{jt_i}}{t_{i+1} - t_i} \right) X_{1t_i}^{v_{1j}} X_{2t_i}^{v_{2j}} \cdots X_{nt_i}^{v_{nj}} (t_{i+1} - t_i) \\ &= \sum_{j=1}^{m} \left( w_{jl} \mu_j X_{1t_i}^{v_{1j}} X_{2t_i}^{v_{2j}} \cdots X_{nt_i}^{v_{nj}} (t_{i+1} - t_i) + w_{jl} \sigma_j X_{1t_i}^{v_{1j}} X_{2t_i}^{v_{2j}} \cdots X_{nt_i}^{v_{nj}} (C_{jt_{i+1}} - C_{jt_i}) \right). \end{aligned}$$
+
+Summing over all possible values of $i$, we have
+
+
+$$\begin{aligned} X_{ls} - X_{l0} &= \sum_{i=1}^{k} \sum_{j=1}^{m} (w_{jl} \mu_j X_{1t_i}^{v_{1j}} X_{2t_i}^{v_{2j}} \cdots X_{nt_i}^{v_{nj}} (t_{i+1} - t_i) + w_{jl} \sigma_j X_{1t_i}^{v_{1j}} X_{2t_i}^{v_{2j}} \cdots X_{nt_i}^{v_{nj}} (C_{jt_{i+1}} - C_{jt_i})) \\ &= \sum_{i=1}^{k} \sum_{j=1}^{m} w_{jl} \mu_j X_{1t_i}^{v_{1j}} X_{2t_i}^{v_{2j}} \cdots X_{nt_i}^{v_{nj}} (t_{i+1} - t_i) + \sum_{i=1}^{k} \sum_{j=1}^{m} w_{jl} \sigma_j X_{1t_i}^{v_{1j}} X_{2t_i}^{v_{2j}} \cdots X_{nt_i}^{v_{nj}} (C_{jt_{i+1}} - C_{jt_i}) \\ &= \sum_{j=1}^{m} \sum_{i=1}^{k} w_{jl} \mu_j X_{1t_i}^{v_{1j}} X_{2t_i}^{v_{2j}} \cdots X_{nt_i}^{v_{nj}} (t_{i+1} - t_i) + \sum_{j=1}^{m} \sum_{i=1}^{k} w_{jl} \sigma_j X_{1t_i}^{v_{1j}} X_{2t_i}^{v_{2j}} \cdots X_{nt_i}^{v_{nj}} (C_{jt_{i+1}} - C_{jt_i}) \\ &\rightarrow \sum_{j=1}^{m} \int_{0}^{s} \mu_j w_{jl} X_{1t}^{v_{1j}} X_{2t}^{v_{2j}} \cdots X_{nt}^{v_{nj}} dt + \sum_{j=1}^{m} \int_{0}^{s} \sigma_j w_{jl} X_{1t}^{v_{1j}} X_{2t}^{v_{2j}} \cdots X_{nt}^{v_{nj}} dC_{jt} \end{aligned}$$
+
+as $\Delta \to 0$. The above uncertain integral equations are equivalent to the following uncertain differential equations,
+
+
+$$dX_{lt} = \sum_{j=1}^{m} \mu_j w_{jl} X_{1t}^{v_{1j}} X_{2t}^{v_{2j}} \cdots X_{nt}^{v_{nj}} dt + \sum_{j=1}^{m} \sigma_j w_{jl} X_{1t}^{v_{1j}} X_{2t}^{v_{2j}} \cdots X_{nt}^{v_{nj}} dC_{jt}, \quad X_{l0} = x_{l0}$$
+
+for $l = 1, 2, \dots, n$. These above equations are called general uncertain chemical reaction equations which are mathematically characterized by uncertain differential equations.
+
+## 4. Parameter estimation
+
+When uncertain chemical reaction equation is used to model some given actual observations, parameter estimation provides feedback for model formulation and data interpretation. In this section, we shall estimate the parameters by the method of moments.
+
+**Theorem 4.1.** Suppose the molecular concentration $X_t$ at time $t$ follows the uncertain chemical reaction equation
+
+
+$$dX_t = -2\mu X_t^2 dt - 2\sigma X_t^2 dC_t, \quad X_0 = x_0 \qquad (6)$$
+
+with unknown parameters $\mu$ and $\sigma$, and $x_{t_i}$ are the observed values of $X_t$ at the times $t_i$, $i = 1, 2, \dots, n$, respectively. Then the moment estimations of $\mu$ and $\sigma$ are
+
+
+$$\left\{ \begin{aligned} \mu &= -\frac{1}{n-1} \sum_{i=1}^{n-1} \frac{x_{t_{i+1}} - x_{t_i}}{x_{t_i}^2 (t_{i+1} - t_i)} \\ \sigma &= \left( \frac{1}{n-1} \sum_{i=1}^{n-1} \left( \frac{x_{t_{i+1}} - x_{t_i}}{x_{t_i}^2 (t_{i+1} - t_i)} - \frac{1}{n-1} \sum_{i=1}^{n-1} \frac{x_{t_{i+1}} - x_{t_i}}{x_{t_i}^2 (t_{i+1} - t_i)} \right) \right)^{\frac{1}{2}}. \end{aligned} \right.$$
+
+**Proof.** Eq. (6) has a difference form
+
+
+$$X_{t_{i+1}} = X_{t_i} - 2\mu X_{t_i}^2 (t_{i+1} - t_i) - 2\sigma X_{t_i}^2 (C_{t_{i+1}} - C_{t_i})$$
+
+which is equivalent to
+
+
+$$\frac{X_{t_{i+1}} - X_{t_i} + 2\mu X_{t_i}^2 (t_{i+1} - t_i)}{-2\sigma X_{t_i}^2 (t_{i+1} - t_i)} = \frac{C_{t_{i+1}} - C_{t_i}}{t_{i+1} - t_i}.$$
+
+
+---
+
+**Table 1**
+Actual observations on reaction 2N₂O₅ (soln) CCL₄ 4NO₂ (soln) + O₂ (g).
+
+<table><thead><tr><th>time (sec)</th><th>0</th><th>600</th><th>1200</th><th>1800</th><th>2400</th><th>3000</th><th>3600</th><th>4200</th><th>4800</th><th>6000</th></tr></thead><tbody><tr><th>N<sub>2</sub>O<sub>5</sub> (mol/L)</th><td>0.31</td><td>0.254</td><td>0.208</td><td>0.172</td><td>0.151</td><td>0.116</td><td>0.0964</td><td>0.0812</td><td>0.0669</td><td>0.0464</td></tr></tbody></table>
+
+By the definition of Liu process [13], the right member above
+
+
+$$ \frac{C_{t_{i+1}} - C_{t_i}}{t_{i+1} - t_i} $$
+
+is a standard normal uncertain variable. Then the uncertain variable
+
+
+$$ \frac{X_{t_{i+1}} - X_{t_i} + 2\mu X_{t_i}^2 (t_{i+1} - t_i)}{-2\sigma X_{t_i}^2 (t_{i+1} - t_i)} $$
+
+follows the standard normal uncertainty distribution with expected value 0 and variance 1. Substituting $x_{t_i}$ and $x_{t_{i+1}}$ for $X_{t_i}$ and $X_{t_{i+1}}$, respectively, we get
+
+
+$$ \frac{x_{t_{i+1}} - x_{t_i} + 2\mu x_{t_i}^2 (t_{i+1} - t_i)}{-2\sigma x_{t_i}^2 (t_{i+1} - t_i)}, \quad i = 1, 2, \dots, n-1 $$
+
+which can be regarded as $n-1$ samples of a standard normal uncertainty distribution. According to the work of Yao and Liu [27], we can obtain parameter estimates by using the sample moments to estimate the population moments. Since there are two unknown parameters in Eq. (6), we equate the first two sample moments to the corresponding first two population moments, i.e.,
+
+
+$$ \left\{ \begin{aligned} & \frac{1}{n-1} \sum_{i=1}^{n-1} \frac{x_{t_{i+1}} - x_{t_i} + 2\mu x_{t_i}^2 (t_{i+1} - t_i)}{-2\sigma x_{t_i}^2 (t_{i+1} - t_i)} = 0 \\ & \frac{1}{n-1} \sum_{i=1}^{n-1} \left( \frac{x_{t_{i+1}} - x_{t_i} + 2\mu x_{t_i}^2 (t_{i+1} - t_i)}{-2\sigma x_{t_i}^2 (t_{i+1} - t_i)} \right)^2 = 1 \end{aligned} \right. $$
+
+which can be readily solved to yield
+
+
+$$ \left\{ \begin{aligned} \mu &= -\frac{1}{n-1} \sum_{i=1}^{n-1} \frac{x_{t_{i+1}} - x_{t_i}}{x_{t_i}^2 (t_{i+1} - t_i)} \\ \sigma &= \left( \frac{1}{n-1} \sum_{i=1}^{n-1} \left( \frac{x_{t_{i+1}} - x_{t_i}}{x_{t_i}^2 (t_{i+1} - t_i)} - \frac{1}{n-1} \sum_{i=1}^{n-1} \frac{x_{t_{i+1}} - x_{t_i}}{x_{t_i}^2 (t_{i+1} - t_i)} \right) \right)^{\frac{1}{2}} \end{aligned} \right. $$
+
+The theorem is proved. ☐
+
+As stated in Section 2, the concentration of N₂O₅ molecules obeys the form of Eq. (6). Henold and Walmsley [6] has provided a credible collection of data presented in Table 1. By Theorem 4.1, we obtain
+
+
+$$ \mu = 0.0011, \quad \sigma = 0.0005. $$
+
+Hence the concentration of N₂O₅ molecules at time t satisfies the following uncertain chemical reaction equation,
+
+
+$$ dX_t = -0.0022X_t^2 dt - 0.0010X_t^2 dC_t, \quad X_0 = 0.31. \qquad (7) $$
+
+The α-path [26] of Eq. (7) satisfies ordinary differential equation
+
+
+$$ dX_t^\alpha = -0.0022(X_t^\alpha)^2 dt + 0.0010(X_t^\alpha)^2 \Phi^{-1}(\alpha) dt, \quad X_0^\alpha = 0.31 \qquad (8) $$
+
+where $\alpha \in (0, 1)$, and $\Phi^{-1}(\alpha)$ is the inverse standard normal uncertainty distribution, i.e.,
+
+
+$$ \Phi^{-1}(\alpha) = \frac{\sqrt{3}}{\pi} \ln \frac{\alpha}{1-\alpha}. $$
+
+It is easy to check that the analytical solution of Eq. (8) is
+
+
+$$ X_t^\alpha = \frac{0.31}{0.31[0.0022 - 0.0010\Phi^{-1}(\alpha)]t + 1}. $$
+
+Figure 1 shows that all the observations fall into the 0.95-region of solution. Therefore, the uncertain chemical reaction equation is shown to be capable of describing actual chemical reactions.
+
+---
+
+Fig. 1. Actual observations and 0.95-region of solution.
+
+## 5. Half-life of reaction
+
+Half-life of reaction $\tau_{1/2}$ refers to the time when the concentration of a given reactant is consumed to half of its initial value in a chemical reaction. A short half-life of reaction indicates a high reaction rate.
+
+**Theorem 5.1.** Suppose the molecular concentration $X_t$ at time $t$ follows the uncertain chemical reaction equation
+
+
+$$dX_t = -2\mu X_t^2 dt - 2\sigma X_t^2 dC_t, \quad X_0 = x_0 \qquad (9)$$
+
+where $\mu$ and $\sigma$ are constants. Then half-life of reaction $\tau_{1/2}$ has an uncertainty distribution
+
+
+$$\Upsilon(s) = \left( 1 + \exp \left( \frac{\pi}{2\sqrt{3}\sigma} \left( \frac{1}{x_0 s} - 2\mu \right) \right) \right)^{-1}, \quad s > 0.$$
+
+**Proof.** In this case of $s = 0$, the fact that the half-life of reaction must be positive implies
+
+
+$$\Upsilon(s) = 0.$$
+
+The $\alpha$-path [26] of Eq. (9) satisfies ordinary differential equation
+
+
+$$dX_t^\alpha = -2\mu(X_t^\alpha)^2 dt + 2\sigma(X_t^\alpha)^2 \Phi^{-1}(\alpha) dt, \quad X_0^\alpha = x_0. \qquad (10)$$
+
+Solving for Eq. (10), we obtain
+
+
+$$X_t^\alpha = \frac{x_0}{2(\mu - \sigma \Phi^{-1}(\alpha))x_0 t + 1}.$$
+
+In an actual decomposition reaction, the concentration of the reactant decreases as the reaction progresses. Then the initial value is the highest quantity of the reactant that can be observed. However, $X_t^\alpha$ is a strictly increasing function with respect to $t$ for each $\alpha \in (\Phi(\frac{\mu}{\sigma}), 1)$, implying that the concentration of the reactant is bound to exceed the initial value. Thus, $\alpha$ cannot be valued with range $(\Phi(\frac{\mu}{\sigma}), 1)$. As described above, we will just consider the case $\alpha \in (0, \Phi(\frac{\mu}{\sigma}))$. When $s > 0$, using the first hitting time theorem of solution of uncertain differential equation [13], we obtain
+
+
+$$\begin{aligned} \Upsilon(s) &= \mathcal{M}\{\tau_{1/2} \le s\} \\ &= \sup \left\{ \alpha \mid \inf_{0 \le t \le s} X_t^\alpha \le \frac{x_0}{2} \right\} \\ &= \sup \left\{ \alpha \mid \inf_{0 \le t \le s} \frac{x_0}{2(\mu - \sigma \Phi^{-1}(\alpha))x_0 t + 1} \le \frac{x_0}{2} \right\} \\ &= \sup \left\{ \alpha \mid \frac{x_0}{2(\mu - \sigma \Phi^{-1}(\alpha))x_0 s + 1} \le \frac{x_0}{2} \right\} \\ &= \sup \left\{ \alpha \mid \alpha \le \Phi\left(\frac{\mu}{\sigma} - \frac{1}{2\sigma x_0 s}\right) \right\} \\ &= \Phi\left(\frac{\mu}{\sigma} - \frac{1}{2\sigma x_0 s}\right) \\ &= \left(1 + \exp\left(\frac{\pi}{2\sqrt{3}\sigma}\left(\frac{1}{x_0 s} - 2\mu\right)\right)\right)^{-1}. \end{aligned}$$
+
+The theorem is proved. $\square$
+
+---
+
+Fig. 2. Uncertainty distribution of $τ_{1/2}$.
+
+Figure 2 depicts plot for the uncertainty distribution of $τ_{1/2}$ with $μ = 0.0011$ and $σ = 0.0005$. The time that the concentration of N₂O₅ molecules is reduced to half of its initial value is about 2400 s from Table 1. It is noticeable that $Υ(2400) = 0.8253$.
+
+## 6. Conclusion
+
+In this article, the reaction rate in chemical kinetics was analyzed by taking the form of uncertain differential equation, and the modeling process of uncertain chemical reaction equation was presented. Furthermore, the method of moments was used to estimate the parameters involved from the observations. The derived model, with the estimated parameters, performed well in fitting the observations. Half-life of reaction has been developed to discover how quickly the concentration of the reactant decreased. Finally, a paradox associated with stochastic chemical kinetics was introduced.
+
+## Acknowledgements
+
+This work was supported by National Natural Science Foundation of China (No. 61873329) and does not have any conflicts of interest.
+
+## Appendix A. Paradox of the stochastic chemical kinetics
+
+In the stochastic chemical kinetics, the dynamic behavior of noise is described by Wiener process $W_t$. For the irreversible decomposition of N₂O₅, assume the concentration of N₂O₅ molecules satisfies the stochastic differential equation
+
+
+$$dX_t = -2\mu X_t^2 dt - 2\sigma X_t^2 dW_t. \qquad (A.1)$$
+
+We may use the estimated values in Section 4 to approximate $μ$ and $σ$ in Eq. (A.1), i.e., $μ = 0.0011$, $σ = 0.0005$. Let $Δt$ be small enough, e.g., taking $Δt = 10^{-4}$. Then from the numerical algorithm,
+
+
+$$\Pr\{X_{t+Δt} - X_t > 0\} = 49.12\%$$
+
+at each time $t$. This result shows that the concentration of N₂O₅ molecules increases at any given time with a probability 49.12%. However, in the actual decomposition reaction, the concentration of N₂O₅ molecules decreases over time. Thus, the noise is incorrectly described by Wiener process.
+
+## References
+
+[1] B.D. Anderson, Reverse-time diffusion equation models, Stoch. Proc. Appl. 12 (3) (1982) 313–326.
+[2] G.E.P. Box, M.E. Muller, A note on the generation of random normal deviates, Ann. Math. Stat. 29 (2) (1958) 610–611.
+[3] X. Chen, B. Liu, Existence and uniqueness theorem for uncertain differential equations, Fuzzy Optim. Decis. Ma. 9 (1) (2010) 69–81.
+[4] X. Chen, J. Li, C. Xiao, P. Yang, Numerical solution and parameter estimation for uncertain SIR model with application to COVID-19, Fuzzy Optim. Decis. Ma. 20 (2) (2021) 189–208.
+[5] D.T. Gillespie, The chemical Langevin equation, J. Chem. Phys. 113 (1) (2000) 297–306.
+[6] K.L. Henold, F. Walmsley, Chemical Principles, Properties, and Reactions, Addison Wesley Publishing Company, Massachusetts, 1984.
+[7] L. Jia, W. Chen, Uncertain SEIAR model for COVID-19 cases in china, Fuzzy Optim. Decis. Ma. 20 (2) (2021) 243–259.
